@@ -2,6 +2,19 @@
 
 # header('Content-Type: text/plain; charset=utf-8');
 
+function readEPFile($file)
+{
+
+	if (!file_exists($file)) {
+
+		return throw new Exception("file not found");
+
+	}
+
+	return file_get_contents($file);
+
+}
+
 function filterFile($pages, $currency, $negativeFilters)
 {
 
@@ -19,29 +32,51 @@ function filterFile($pages, $currency, $negativeFilters)
 
 }
 
-function readEPFile($file)
+function matchValues($contents, $patterns)
 {
-	$pages = [];
 
-	if (!file_exists($file)) {
+	return array_map(function ($classification, $pattern) use ($contents) {
 
-		return throw new Exception("file not found");
+		list($report, $keyword, $limiter, $position) = array_pad(explode('|', $pattern), 4, null);
 
-	}
+		$pattern = '/' . ($report ? (preg_quote($report, '/') . '.*?') : '') .
+			preg_quote($keyword, '/') . '.*?\s(\S+' . preg_quote($limiter) . ')/';
 
-	$contents = file_get_contents($file);
+		if ($position === '_SECOND_') {
+
+			$pattern = '/' . ($report ? (preg_quote($report, '/') . '.*?') : '') .
+				preg_quote($keyword, '/') . '.*?[\d,]+\.\d+DB\s+(\S+' . preg_quote($limiter) . ')/';
+
+		}
+
+		if (preg_match($pattern, $contents, $matches)) {
+
+			return [$classification => trim($matches[1])];
+
+		}
+
+		return [$classification => null];
+
+	}, $patterns, array_keys($patterns));
+
+}
+
+
+$file = "files/ep747/EP747_20240705.txt";
+
+try {
+
+	$contents = readEPFile($file);
 
 	$pages = explode("\f", $contents);
 
 	$filterWords = [
-		' 010203 DESAFIO',
+		'010203 DESAFIO',
 		'CLEARING/REIMBURSEMENT FEES REPORT',
 		'PENDING SETTLEMENT REPORT',
-		'PENDING FEE SETTLEMENT REPORT'
+		'PENDING FEE SETTLEMENT REPORT',
+		'9000113915 FUND TRANSFER'
 	];
-
-	$filtered = filterFile($pages, 'BRL', $filterWords);
-	$filtered = preg_replace('!\s+!', ' ', implode("\n", $filtered));
 
 	$patterns = [
 		'|PURCHASE ORIGINAL SALE RECEIVED FROM VISA|DB' => 'COMPRA',
@@ -67,44 +102,37 @@ function readEPFile($file)
 		'|QUASI-CASH DISPUTE FIN|CR' => 'CHARGEBACK DE QUASI-CASH',
 		'|QUASI-CASH DISPUTE FIN|DB' => 'COMISSAO DE CHARGEBACK DE QUASI-CASH',
 	];
+	$usdPatterns = [
+		'|PURCHASE ORIGINAL SALE RECEIVED FROM VISA|DB' => 'COMPRA',
+		'|MERCHANDISE CREDIT ORIGINAL RECEIVED FROM VISA|CR' => 'CREDITO VOUCHER',
+		'|ATM CASH ORIGINAL WITHDRAWAL RECEIVED FROM VISA|DB' => 'SAQUE',
+		# '|QUASI-CASH ORIGINAL SALE RECEIVED FROM VISA|DB' => 'QUASI-CASH',
+		# '|REVERSAL PURCHASE REVERSAL|CR' => 'REVERSO DE COMPRA',
 
-	$values = array_map(function ($classification, $pattern) use ($filtered) {
+		'VISA INTERNATIONAL|DISP FIN DEBITS|CR' => 'CHARGEBACK DE COMPRA',
+		'VISA INTERNATIONAL|DISP FIN RVRSL DEBITS|DB' => 'REVERSO DE CHARGEBACK',
+		'VISA INTERNATIONAL|DISP RESP RVRSL DEBITS|CR' => 'REVERSO DE REAPRESENTACAO',
+		'VISA INTERNATIONAL|DISP FIN DEBITS|DB' => 'COMISSÃO CHARGEBACK DE COMPRA',
+		'REIMBURSEMENT FEES REPORT|TOTAL ORIGINAL SALE| ' => 'COMISSAO DE COMPRA',
+		'REIMBURSEMENT FEES REPORT|NET MERCHANDISE CREDIT| ' => 'COMISSAO DE CREDITO VOUCHER',
+		'VISA INTERNATIONAL|DISP FIN RVRSL DEBITS|CR' => 'COMISSAO DE REVERSO DE CHARGEBACK',
+		'VISA INTERNATIONAL|DISP RESP RVRSL DEBITS|DB' => 'COMISSAO DE REVERSO DE REAPRESENTACAO',
+		'ATM CASH ORIGINAL WITHDRAWAL VISA L.A.C.|TOTAL VISA L.A.C.| ' => 'COMISSAO DE SAQUE',
+		'SRE SETTLEMENT RECAP REPORT|FINAL SETTLEMENT NET AMOUNT|DB' => 'COMISSAO DE SAQUE',
+	];
 
-		list($report, $keyword, $limiter, $position) = array_pad(explode('|', $pattern), 4, null);
+	$filtered = preg_replace('!\s+!', ' ', implode("\n", filterFile($pages, 'BRL', $filterWords)));
 
-		$pattern = '/' . ($report ? (preg_quote($report, '/') . '.*?') : '') .
-			preg_quote($keyword, '/') . '.*?\s(\S+' . preg_quote($limiter) . ')/';
+	$brlValues = matchValues($filtered, $patterns);
 
-		if ($position === '_SECOND_') {
+	$usdFiltered = preg_replace('!\s+!', ' ', implode("\n", filterFile($pages, 'USD', $filterWords)));
 
-			$pattern = '/' . ($report ? (preg_quote($report, '/') . '.*?') : '') .
-				preg_quote($keyword, '/') . '.*?[\d,]+\.\d+DB\s+(\S+' . preg_quote($limiter) . ')/';
+	$usdValues = matchValues($usdFiltered, $usdPatterns);
 
-		}
-
-		# var_dump($pattern);
-
-		if (preg_match($pattern, $filtered, $matches)) {
-
-			return [$classification => trim($matches[1])];
-
-		}
-
-		return [$classification => null];
-
-	}, $patterns, array_keys($patterns));
-
-	var_dump($values);
+	var_dump($brlValues);
+	var_dump($usdValues);
 
 	echo "\n\n";
-
-}
-
-$file = "files/ep747/EP747_20240705.txt";
-
-try {
-
-	readEPFile($file);
 
 } catch (Exception $exception) {
 
