@@ -12,7 +12,7 @@ class ProcessEp
 	private array $brlPatterns = [];
 	private InsertService $insertService;
 
-	public function __construct(string $processDir, InsertService $insertService, array $config)
+	public function __construct(string $processDir, InsertService $insertService, array $transactions, array $config)
 	{
 
 		$this->processDir = $processDir;

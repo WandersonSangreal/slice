@@ -1,6 +1,6 @@
 <?php
 
-header('Content-Type: text/plain; charset=utf-8');
+# header('Content-Type: text/plain; charset=utf-8');
 
 require_once __DIR__ . '/src/Config/bootstrap.php';
 
@@ -8,6 +8,7 @@ use App\Database\PostgresDatabase;
 use App\Processors\ProcessEp;
 use App\Processors\ProcessJsonClearing;
 use App\Services\InsertService;
+use App\Services\TransactionService;
 
 function runner()
 {
@@ -17,34 +18,18 @@ function runner()
 
 	$jsonFolder = __DIR__ . "/files/json/tests";
 
+	$transactionService = new TransactionService($connection);
+	$transactions = $transactionService->fetchAll();
+
 	$insertService = new InsertService($connection, "clearings");
 
-	$processClearing = new ProcessJsonClearing($jsonFolder, $insertService, ['bytes' => 8]);
+	$processClearing = new ProcessJsonClearing($jsonFolder, $insertService, $transactions, ['bytes' => 8]);
 
-	# $processClearing->processFiles();
+	$processClearing->processFiles();
 
 }
 
 runner();
-
-/*
-
-$file = "files/json/tests/VISA_TRANSACTIONAL_CLEARING_20240705_01.json";
-
-try {
-
-	stream_filter_register('jsondecode', jsondecode_filter::class);
-
-	streamJSONFile($file, 8);
-
-} catch (Exception $exception) {
-
-	echo $exception->getMessage();
-
-}
-
-*/
-
 
 /*
 $file = "files/ep747/EP747_20240705.txt";

@@ -13,12 +13,14 @@ class ProcessJsonClearing
 
 	private int $bytes = 4096;
 	private string $processDir;
+	private array $transactions;
 	private InsertService $insertService;
 
-	public function __construct(string $processDir, InsertService $insertService, array $config)
+	public function __construct(string $processDir, InsertService $insertService, array $transactions, array $config)
 	{
 
 		$this->processDir = $processDir;
+		$this->transactions = $transactions;
 		$this->insertService = $insertService;
 		$this->bytes = array_key_exists('bytes', $config) ? $config['bytes'] : $this->bytes;
 
@@ -82,6 +84,8 @@ class ProcessJsonClearing
 
 					$processed = json_decode($formatted, true);
 
+					$processed = $this->classify($processed);
+
 					echo "streaming " . sizeof($processed) . ' lines from: ' . basename($file) . PHP_EOL;
 
 					$this->insertService->insert($processed);
@@ -104,6 +108,8 @@ class ProcessJsonClearing
 				try {
 
 					$processed = json_decode($buffer, true);
+
+					$processed = $this->classify($processed);
 
 					echo "streaming " . sizeof($processed) . ' lines from: ' . basename($file) . PHP_EOL;
 
@@ -136,6 +142,47 @@ class ProcessJsonClearing
 		echo "error: proccessing file: $file" . PHP_EOL . PHP_EOL;
 
 		return false;
+
+	}
+
+	private function classify($values): array
+	{
+		return array_map(function ($item) {
+
+			if ($item['slice_code'] === '') {
+				return [...$item, 'transaction_id' => $this->transactions['UNKNOWN'][0]];
+			}
+
+			if ($item['clearing_action_code'] === '11' &&
+				$item['operation_code'] === '' &&
+				$item['clearing_cancel'] === 1 &&
+				$item['clearing_interchange_fee_sign'] === 'D') {
+				return [...$item, 'transaction_id' => $this->transactions['REVERSO DE COMPRA'][0]];
+			}
+
+			if ($item['operation_type'] === 1 && $item['operation_code'] === '') {
+				return [...$item, 'transaction_id' => $this->transactions['REVERSO DE SAQUE'][0]];
+			}
+
+			if (in_array($item['operation_type'], [0, 1]) && $item['operation_code'] === '02') {
+				return [
+					...$item,
+					'transaction_id' =>
+						($item['clearing_debit'] ? $this->transactions['SAQUE'][0] : $this->transactions['REVERSO DE SAQUE'][0])
+				];
+			}
+
+			if ($item['operation_code'] === '01' && $item['reason_code'] < '2000') {
+				return [
+					...$item,
+					'transaction_id' =>
+						($item['clearing_debit'] === 0 ? $this->transactions['REVERSO DE COMPRA'][0] : $this->transactions['COMPRA'][0])
+				];
+			}
+
+			return [...$item, 'transaction_id' => $this->transactions['UNKNOWN-99'][0]];
+
+		}, $values);
 
 	}
 
