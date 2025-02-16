@@ -1,67 +1,52 @@
 <?php
 
-# header('Content-Type: text/plain; charset=utf-8');
+header('Content-Type: text/plain; charset=utf-8');
 
-function readEPFile($file)
+require_once __DIR__ . '/src/Config/bootstrap.php';
+
+use App\Database\PostgresDatabase;
+use App\Processors\ProcessEp;
+use App\Processors\ProcessJsonClearing;
+use App\Services\InsertService;
+
+function runner()
 {
 
-	if (!file_exists($file)) {
+	$db = new PostgresDatabase();
+	$connection = $db->getConnection();
 
-		return throw new Exception("file not found");
+	$jsonFolder = __DIR__ . "/files/json/tests";
 
-	}
+	$insertService = new InsertService($connection, "clearings");
 
-	return file_get_contents($file);
+	$processClearing = new ProcessJsonClearing($jsonFolder, $insertService, ['bytes' => 8]);
+
+	# $processClearing->processFiles();
 
 }
 
-function filterFile($pages, $currency, $negativeFilters)
-{
+runner();
 
-	$filteredCurrency = array_filter($pages, fn($e) => str_contains($e, $currency));
+/*
 
-	# array_map(fn($w) => $filteredCurrency = array_filter($filteredCurrency, fn($e) => !str_contains($e, $w)), $negativeFilters);
+$file = "files/json/tests/VISA_TRANSACTIONAL_CLEARING_20240705_01.json";
 
-	foreach ($negativeFilters as $word) {
+try {
 
-		$filteredCurrency = array_filter($filteredCurrency, fn($e) => !str_contains($e, $word));
+	stream_filter_register('jsondecode', jsondecode_filter::class);
 
-	}
+	streamJSONFile($file, 8);
 
-	return $filteredCurrency;
+} catch (Exception $exception) {
 
-}
-
-function matchValues($contents, $patterns)
-{
-
-	return array_map(function ($classification, $pattern) use ($contents) {
-
-		list($report, $keyword, $limiter, $position) = array_pad(explode('|', $pattern), 4, null);
-
-		$pattern = '/' . ($report ? (preg_quote($report, '/') . '.*?') : '') .
-			preg_quote($keyword, '/') . '.*?\s(\S+' . preg_quote($limiter) . ')/';
-
-		if ($position === '_SECOND_') {
-
-			$pattern = '/' . ($report ? (preg_quote($report, '/') . '.*?') : '') .
-				preg_quote($keyword, '/') . '.*?[\d,]+\.\d+DB\s+(\S+' . preg_quote($limiter) . ')/';
-
-		}
-
-		if (preg_match($pattern, $contents, $matches)) {
-
-			return [$classification => trim($matches[1])];
-
-		}
-
-		return [$classification => null];
-
-	}, $patterns, array_keys($patterns));
+	echo $exception->getMessage();
 
 }
 
+*/
 
+
+/*
 $file = "files/ep747/EP747_20240705.txt";
 
 try {
@@ -89,7 +74,7 @@ try {
 		'RECONCILIATION REPORT|DISPUTE RESP FIN|DB' => 'REAPRESENTACAO DE COMPRA',
 		'|NO DEFERMENT PURCHASE REVERSAL|DB' => 'REVERSO DE CHARGEBACK',
 		'|ATM DECLINE NNSS DEBITS|DB' => 'COMISSAO DE ATM DECLINE',
-		'|PURCHASE DISPUTE FIN|DB' => 'COMISSÃO CHARGEBACK DE COMPRA',
+		'|PURCHASE DISPUTE FIN|DB' => 'COMISSAO CHARGEBACK DE COMPRA',
 
 
 		'27-DAY DEFER|QUASI-CASH ORIGINAL SALE|CR' => 'COMISSAO DE QUASI-CASH',
@@ -111,14 +96,14 @@ try {
 
 		'VISA INTERNATIONAL|DISP FIN DEBITS|CR' => 'CHARGEBACK DE COMPRA',
 		'VISA INTERNATIONAL|DISP FIN RVRSL DEBITS|DB' => 'REVERSO DE CHARGEBACK',
-		'VISA INTERNATIONAL|DISP RESP RVRSL DEBITS|CR' => 'REVERSO DE REAPRESENTACAO',
-		'VISA INTERNATIONAL|DISP FIN DEBITS|DB' => 'COMISSÃO CHARGEBACK DE COMPRA',
-		'REIMBURSEMENT FEES REPORT|TOTAL ORIGINAL SALE| ' => 'COMISSAO DE COMPRA',
-		'REIMBURSEMENT FEES REPORT|NET MERCHANDISE CREDIT| ' => 'COMISSAO DE CREDITO VOUCHER',
+		'VISA INTERNATIONAL|DISP RESP RVRSL DEBITS|CR' => 'REVERSO DE REAPRESENTACAO', # *
+		'VISA INTERNATIONAL|DISP FIN DEBITS|DB' => 'COMISSAO CHARGEBACK DE COMPRA',
+		'REIMBURSEMENT FEES REPORT|TOTAL ORIGINAL SALE| ' => 'COMISSAO DE COMPRA', # *
+		'REIMBURSEMENT FEES REPORT|NET MERCHANDISE CREDIT| ' => 'COMISSAO DE CREDITO VOUCHER', # *
 		'VISA INTERNATIONAL|DISP FIN RVRSL DEBITS|CR' => 'COMISSAO DE REVERSO DE CHARGEBACK',
-		'VISA INTERNATIONAL|DISP RESP RVRSL DEBITS|DB' => 'COMISSAO DE REVERSO DE REAPRESENTACAO',
+		'VISA INTERNATIONAL|DISP RESP RVRSL DEBITS|DB' => 'COMISSAO DE REVERSO DE REAPRESENTACAO', # *
 		'ATM CASH ORIGINAL WITHDRAWAL VISA L.A.C.|TOTAL VISA L.A.C.| ' => 'COMISSAO DE SAQUE',
-		'SRE SETTLEMENT RECAP REPORT|FINAL SETTLEMENT NET AMOUNT|DB' => 'COMISSAO DE SAQUE',
+		'SRE SETTLEMENT RECAP REPORT|FINAL SETTLEMENT NET AMOUNT|DB' => 'LIQUIDACOES VISA',
 	];
 
 	$filtered = preg_replace('!\s+!', ' ', implode("\n", filterFile($pages, 'BRL', $filterWords)));
@@ -140,3 +125,5 @@ try {
 
 }
 
+
+*/

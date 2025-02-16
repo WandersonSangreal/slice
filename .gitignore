@@ -1,6 +1,9 @@
-app.js
-commands
-process.php
+assets/app.js
+assets/commands
+/vendor
+.env
 assets
-.idea
+/.idea
+/.vscode
 files
+test.php
