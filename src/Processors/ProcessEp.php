@@ -8,6 +8,7 @@ class ProcessEp
 {
 	private string $processDir;
 	private array $filters = [];
+	private array $transactions;
 	private array $usdPatterns = [];
 	private array $brlPatterns = [];
 	private InsertService $insertService;
@@ -16,6 +17,7 @@ class ProcessEp
 	{
 
 		$this->processDir = $processDir;
+		$this->transactions = $transactions;
 		$this->insertService = $insertService;
 
 		$this->filters = array_key_exists('filters', $config) ? $config['filters'] : $this->filters;
@@ -29,6 +31,12 @@ class ProcessEp
 
 		$files = glob("{$this->processDir}/*.txt");
 
+		if (empty($files)) {
+
+			echo "no files to process" . PHP_EOL . PHP_EOL;
+
+		}
+
 		foreach ($files as $file) {
 
 			echo "processing file: " . basename($file) . PHP_EOL;
@@ -37,9 +45,13 @@ class ProcessEp
 
 			if ($success) {
 
+				is_dir("{$this->processDir}/processed/") || mkdir("{$this->processDir}/processed/");
+
 				rename($file, "{$this->processDir}/processed/" . basename($file));
 
 			} else {
+
+				is_dir("{$this->processDir}/failed/") || mkdir("{$this->processDir}/failed/");
 
 				rename($file, "{$this->processDir}/failed/" . basename($file));
 
@@ -65,10 +77,24 @@ class ProcessEp
 			$filteredBRL = $this->filterFile($contents, 'BRL');
 			$filteredUSD = $this->filterFile($contents, 'USD');
 
-			$valuesBRL = $this->matchValues($filteredBRL, $this->brlPatterns);
-			$valuesUSD = $this->matchValues($filteredUSD, $this->usdPatterns);
+			$valuesBRL = $this->matchValues($filteredBRL, $this->brlPatterns, 'BRL');
+			$valuesUSD = $this->matchValues($filteredUSD, $this->usdPatterns, 'USD');
 
-			return true;
+			try {
+
+				$this->insertService->insert(array_merge($valuesBRL, $valuesUSD));
+
+				echo "success: proccessed file: " . basename($file) . PHP_EOL . PHP_EOL;
+
+				return true;
+
+			} catch (\Exception $e) {
+
+				echo "error: processing file: " . $e->getMessage() . PHP_EOL;
+
+				return false;
+
+			}
 
 		}
 
@@ -91,34 +117,52 @@ class ProcessEp
 
 		}
 
-		return implode("\n", $filtered);
+		return preg_replace('!\s+!', ' ', implode("\n", $filtered));
 
 	}
 
-	private function matchValues(string $contents, array $patterns)
+	private function matchValues(string $contents, array $patterns, string $currency)
 	{
 
-		return array_map(function ($classification, $pattern) use ($contents) {
+		return array_map(function ($classification, $pattern) use ($contents, $currency) {
 
-			list($report, $keyword, $limiter, $position) = array_pad(explode('|', $pattern), 4, null);
+			list($report, $keyword, $limiter, $control) = array_pad(explode('|', $pattern), 4, null);
+
+			$type = null;
 
 			$pattern = '/' . ($report ? (preg_quote($report, '/') . '.*?') : '') .
 				preg_quote($keyword, '/') . '.*?\s(\S+' . preg_quote($limiter) . ')/';
 
-			if ($position === '_SECOND_') {
+			if ($control === '_SECOND_') {
 
 				$pattern = '/' . ($report ? (preg_quote($report, '/') . '.*?') : '') .
 					preg_quote($keyword, '/') . '.*?[\d,]+\.\d+DB\s+(\S+' . preg_quote($limiter) . ')/';
 
 			}
 
-			if (preg_match($pattern, $contents, $matches)) {
+			if ($control === '_CR_' || $control === '_DB_') {
 
-				return [$classification => trim($matches[1])];
+				$type = str_replace('_', '', $control);
 
 			}
 
-			return [$classification => null];
+			if (preg_match($pattern, $contents, $matches)) {
+
+				return [
+					'value' => preg_replace('/[^\d.]/', '', trim($matches[1])),
+					'type_value' => $type ?? preg_replace('/[^a-zA-Z]/', '', trim($matches[1])),
+					'currency' => $currency,
+					'transaction_id' => $this->transactions[$classification][0],
+				];
+
+			}
+
+			return [
+				'value' => null,
+				'type_value' => $type ?? null,
+				'currency' => $currency,
+				'transaction_id' => $this->transactions[$classification][0],
+			];
 
 		}, $patterns, array_keys($patterns));
 

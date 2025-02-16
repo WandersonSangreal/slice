@@ -2,6 +2,7 @@
 
 namespace App\Processors;
 
+use Exception;
 use App\Services\InsertService;
 
 define('L_BRACKETS', '[');
@@ -31,6 +32,12 @@ class ProcessJsonClearing
 
 		$files = glob("{$this->processDir}/*.json");
 
+		if (empty($files)) {
+
+			echo "no files to process" . PHP_EOL . PHP_EOL;
+
+		}
+
 		foreach ($files as $file) {
 
 			echo "processing file: " . basename($file) . PHP_EOL . PHP_EOL;
@@ -47,7 +54,7 @@ class ProcessJsonClearing
 
 				is_dir("{$this->processDir}/failed/") || mkdir("{$this->processDir}/failed/");
 
-				# rename($file, "{$this->processDir}/failed/" . basename($file));
+				rename($file, "{$this->processDir}/failed/" . basename($file));
 
 			}
 
@@ -77,20 +84,24 @@ class ProcessJsonClearing
 				$chunk = fread($stream, $this->bytes * 1024);
 
 				$data = explode(PHP_EOL, $buffer . ltrim($chunk, L_BRACKETS));
-				$buffer = rtrim(array_pop($data), R_BRACKETS);
-				$formatted = L_BRACKETS . rtrim(implode(PHP_EOL, $data), COMMA) . R_BRACKETS;
+				$buffer = rtrim(preg_replace('!\s+!', '', array_pop($data)), R_BRACKETS);
+				$formatted = L_BRACKETS . rtrim(preg_replace('!\s+!', '', implode(PHP_EOL, $data)), COMMA) . R_BRACKETS;
 
 				try {
 
 					$processed = json_decode($formatted, true);
 
+					if (!$processed) {
+						echo $formatted;
+					}
+
 					$processed = $this->classify($processed);
 
-					echo "streaming " . sizeof($processed) . ' lines from: ' . basename($file) . PHP_EOL;
+					echo "streaming [" . sizeof($processed) . "] lines from: " . basename($file) . PHP_EOL;
 
 					$this->insertService->insert($processed);
 
-				} catch (\Exception $e) {
+				} catch (Exception $e) {
 
 					$buffer = '';
 					$error = true;
@@ -115,7 +126,7 @@ class ProcessJsonClearing
 
 					$this->insertService->insert($processed);
 
-				} catch (\Exception $e) {
+				} catch (Exception $e) {
 
 					$error = true;
 
@@ -145,8 +156,9 @@ class ProcessJsonClearing
 
 	}
 
-	private function classify($values): array
+	private function classify(array $values): array
 	{
+
 		return array_map(function ($item) {
 
 			if ($item['slice_code'] === '') {
