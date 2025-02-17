@@ -13,6 +13,8 @@ use App\Services\TransactionService;
 function runner()
 {
 
+	$begin = microtime(true);
+
 	$db = new PostgresDatabase();
 	$connection = $db->getConnection();
 
@@ -22,6 +24,10 @@ function runner()
 	proccessEP747($connection, $transactions);
 
 	proccessClearing($connection, $transactions);
+
+	$end = microtime(true);
+
+	echo "execution time: " . number_format(($end - $begin), 6) . " seconds\n";
 
 }
 
