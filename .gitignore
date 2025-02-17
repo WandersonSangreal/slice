@@ -5,4 +5,5 @@ files/commands
 assets
 /.idea
 /.vscode
+/pg_data
 test.php

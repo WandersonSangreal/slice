@@ -1,0 +1,33 @@
+services:
+    db:
+        image: postgres:14.16
+        container_name: db
+        networks:
+            - app-network
+        restart: always
+        environment:
+            POSTGRES_DB: ${DB_NAME}
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASS}
+        ports:
+            - "5434:5432"
+        volumes:
+            - ./pg_data:/var/lib/postgresql/data
+
+    php:
+        build: .
+        container_name: php_service
+        networks:
+            - app-network
+        depends_on:
+            - db
+        volumes:
+            - .:/app
+            - ./files:/app/files
+        env_file:
+            - .env
+
+
+networks:
+    app-network:
+        driver: bridge
