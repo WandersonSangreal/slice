@@ -58,8 +58,8 @@ mas tentei deixar o mais próximo possível.
    como o COPY e sem utilizar o bind, mas essa matem o bindValues uma exatidão maior nos dados
 
 
-4. Antes de executar qualquer comando o arquivos devem estar em suas respectivas pastas `file/ep747` e `file/json`, após
-   os arquivos serem processados eles irão para as subpastas processed, ou failed em caso de falha.
+4. Antes de executar qualquer comando o arquivos devem estar em suas respectivas pastas `files/ep747` e `files/json`,
+   após os arquivos serem processados eles irão para as subpastas processed, ou failed em caso de falha.
 
 
 5. Essas pastas precisam de permissão, leitura, execução e escrita
