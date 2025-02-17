@@ -29,11 +29,14 @@ class ProcessEp
 	public function processFiles()
 	{
 
+		$results = [];
 		$files = glob("{$this->processDir}/*.txt");
 
 		if (empty($files)) {
 
 			echo "no files to process" . PHP_EOL . PHP_EOL;
+
+			return $results;
 
 		}
 
@@ -49,6 +52,8 @@ class ProcessEp
 
 				rename($file, "{$this->processDir}/processed/" . basename($file));
 
+				array_push($results, basename($file));
+
 			} else {
 
 				is_dir("{$this->processDir}/failed/") || mkdir("{$this->processDir}/failed/");
@@ -58,6 +63,8 @@ class ProcessEp
 			}
 
 		}
+
+		return $results;
 
 	}
 

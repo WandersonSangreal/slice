@@ -11,7 +11,7 @@ class PostgresDatabase
 	private $schema = null;
 	private $connection = null;
 
-	public function __construct()
+	public function __construct($host, $dbname, $user, $pass)
 	{
 
 		try {
@@ -20,10 +20,10 @@ class PostgresDatabase
 
 			$manager->addConnection([
 				"driver" => "pgsql",
-				"host" => $_ENV['DB_HOST'],
-				"database" => $_ENV['DB_NAME'],
-				"username" => $_ENV['DB_USER'],
-				"password" => $_ENV['DB_PASS']
+				"host" => $host,
+				"database" => $dbname,
+				"username" => $user,
+				"password" => $pass
 			]);
 
 			$manager->setAsGlobal();

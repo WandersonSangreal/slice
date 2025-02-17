@@ -30,11 +30,14 @@ class ProcessJsonClearing
 	public function processFiles()
 	{
 
+		$results = [];
 		$files = glob("{$this->processDir}/*.json");
 
 		if (empty($files)) {
 
 			echo "no files to process" . PHP_EOL . PHP_EOL;
+
+			return $results;
 
 		}
 
@@ -49,6 +52,8 @@ class ProcessJsonClearing
 				is_dir("{$this->processDir}/processed/") || mkdir("{$this->processDir}/processed/");
 
 				rename($file, "{$this->processDir}/processed/" . basename($file));
+
+				array_push($results, basename($file));
 
 			} else {
 

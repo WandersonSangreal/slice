@@ -2,16 +2,35 @@
 
 namespace App\Migrations;
 
-class CreateTables
+class MigrateTables
 {
 
-	public function migrate($schema, $connection)
+	public function check($schema)
+	{
+		return $schema->hasTable('eps') && $schema->hasTable('clearings') && $schema->hasTable('transactions');
+	}
+
+	public function drop($schema)
 	{
 
 		$schema->dropIfExists('eps');
 		$schema->dropIfExists('clearings');
 		$schema->dropIfExists('transactions');
 
+	}
+
+	public function truncate($connection)
+	{
+
+		$connection->table('eps')->truncate();
+		$connection->table('clearings')->truncate();
+
+	}
+
+	public function migrate($schema, $connection)
+	{
+
+		$this->drop($schema);
 
 		$schema->create('transactions', function ($table) {
 			$table->id();

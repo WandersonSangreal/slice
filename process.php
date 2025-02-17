@@ -9,21 +9,29 @@ use App\Processors\ProcessEp;
 use App\Processors\ProcessJsonClearing;
 use App\Services\InsertService;
 use App\Services\TransactionService;
-use App\Migrations\CreateTables;
+use App\Migrations\MigrateTables;
 
 function runner()
 {
 
 	$begin = microtime(true);
 
-	$db = new PostgresDatabase();
+	$db = new PostgresDatabase($_ENV['DB_HOST'], $_ENV['DB_NAME'], $_ENV['DB_USER'], $_ENV['DB_PASS']);
 
 	$schema = $db->getSchema();
 	$connection = $db->getConnection();
 
-	$migrations = new CreateTables();
+	$migrations = new MigrateTables();
 
-	$migrations->migrate($schema, $connection);
+	if ($migrations->check($schema)) {
+
+		$migrations->truncate($connection);
+
+	} else {
+
+		$migrations->migrate($schema, $connection);
+
+	}
 
 	$transactionService = new TransactionService($connection);
 	$transactions = $transactionService->get();
