@@ -2,18 +2,17 @@
 
 namespace App\Services;
 
-use PDO;
 use Exception;
 use InvalidArgumentException;
 
 class InsertService
 {
-	private PDO $pdo;
+	private $connection;
 	private string $table;
 
-	public function __construct(PDO $pdo, string $table)
+	public function __construct($connection, string $table)
 	{
-		$this->pdo = $pdo;
+		$this->connection = $connection;
 		$this->table = $table;
 	}
 
@@ -26,36 +25,35 @@ class InsertService
 		}
 
 		$columns = array_keys(current($data));
-
-		# PARAMS LIMIT 65535
 		$values = str_repeat('?,', count(current($data)) - 1) . '?';
 
-		$sql = "INSERT INTO $this->table (" . join(',', $columns) . ") VALUES " .
+		$sql = "INSERT INTO {$this->table} (" . join(',', $columns) . ") VALUES " .
 			str_repeat("($values),", count($data) - 1) . "($values)";
 
-		# USING COPY
+		# USING COPY, FILE ISSUES
 		# $sql = "COPY $this->table FROM $tmpCSV WITH (FORMAT csv, HEADER true, DELIMITER ',');";
 
-		# $sql = "INSERT INTO {$this->table} (" . join(',', $columns) . ") VALUES " .
-		# "('" . join("'),('", array_map(fn($item) => str_replace("'null'", "null", join("','", array_map(fn($i) => (!isset($i) ? 'null' : $i), $item))), $data)) . "');";
+		$pdo = $this->connection->getPDO();
 
-		$stmt = $this->pdo->prepare($sql);
+		$stmt = $pdo->prepare($sql);
 
 		try {
 
-			$this->pdo->beginTransaction();
+			$pdo->beginTransaction();
 
 			# PARAMS LIMIT 65535
 			$stmt->execute(array_merge(...array_map('array_values', $data)));
-			# $stmt->execute();
 
-			$this->pdo->commit();
+			# SLOWER
+			# $this->connection->table($this->table)->insert($data);
+
+			$pdo->commit();
 
 			return true;
 
 		} catch (Exception $e) {
 
-			$this->pdo->rollBack();
+			$pdo->rollBack();
 
 			return throw new Exception("error: inserting data: " . $e->getMessage());
 

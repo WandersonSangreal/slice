@@ -9,6 +9,7 @@ use App\Processors\ProcessEp;
 use App\Processors\ProcessJsonClearing;
 use App\Services\InsertService;
 use App\Services\TransactionService;
+use App\Migrations\CreateTables;
 
 function runner()
 {
@@ -16,10 +17,16 @@ function runner()
 	$begin = microtime(true);
 
 	$db = new PostgresDatabase();
+
+	$schema = $db->getSchema();
 	$connection = $db->getConnection();
 
+	$migrations = new CreateTables();
+
+	$migrations->migrate($schema, $connection);
+
 	$transactionService = new TransactionService($connection);
-	$transactions = $transactionService->fetchAll();
+	$transactions = $transactionService->get();
 
 	proccessEP747($connection, $transactions);
 
@@ -97,7 +104,10 @@ function proccessClearing($connection, $transactions)
 
 	$insertService = new InsertService($connection, "clearings");
 
-	$processClearing = new ProcessJsonClearing($jsonFolder, $insertService, $transactions, ['bytes' => intval($_ENV['STREAM_BYTES'])]);
+	$processClearing = new ProcessJsonClearing(
+		$jsonFolder, $insertService, $transactions,
+		['bytes' => intval($_ENV['STREAM_BYTES'])]
+	);
 
 	$processClearing->processFiles();
 

@@ -1,5 +1,5 @@
 assets/app.js
-assets/commands
+files/commands
 /vendor
 .env
 assets

@@ -2,27 +2,19 @@
 
 namespace App\Services;
 
-use PDO;
-use Exception;
-use InvalidArgumentException;
-
 class TransactionService
 {
-	private PDO $pdo;
+	private $connection;
 
-	public function __construct(PDO $pdo)
+	public function __construct($connection)
 	{
-		$this->pdo = $pdo;
+		$this->connection = $connection;
 	}
 
-	public function fetchAll(): array
+	public function get(): array
 	{
 
-		$stmt = $this->pdo->prepare("SELECT name, id FROM transactions;");
-
-		$stmt->execute();
-
-		return $stmt->fetchAll(PDO::FETCH_COLUMN | PDO::FETCH_GROUP) ?? [];
+		return $this->connection->table('transactions')->get(['id', 'name'])->keyBy('name')->toArray();
 
 	}
 

@@ -162,25 +162,25 @@ class ProcessJsonClearing
 		return array_map(function ($item) {
 
 			if ($item['slice_code'] === '') {
-				return [...$item, 'transaction_id' => $this->transactions['UNKNOWN'][0]];
+				return [...$item, 'transaction_id' => $this->transactions['UNKNOWN']->id];
 			}
 
 			if ($item['clearing_action_code'] === '11' &&
 				$item['operation_code'] === '' &&
 				$item['clearing_cancel'] === 1 &&
 				$item['clearing_interchange_fee_sign'] === 'D') {
-				return [...$item, 'transaction_id' => $this->transactions['REVERSO DE COMPRA'][0]];
+				return [...$item, 'transaction_id' => $this->transactions['REVERSO DE COMPRA']->id];
 			}
 
 			if ($item['operation_type'] === 1 && $item['operation_code'] === '') {
-				return [...$item, 'transaction_id' => $this->transactions['REVERSO DE SAQUE'][0]];
+				return [...$item, 'transaction_id' => $this->transactions['REVERSO DE SAQUE']->id];
 			}
 
 			if (in_array($item['operation_type'], [0, 1]) && $item['operation_code'] === '02') {
 				return [
 					...$item,
 					'transaction_id' =>
-						($item['clearing_debit'] ? $this->transactions['SAQUE'][0] : $this->transactions['REVERSO DE SAQUE'][0])
+						($item['clearing_debit'] ? $this->transactions['SAQUE']->id : $this->transactions['REVERSO DE SAQUE']->id)
 				];
 			}
 
@@ -188,11 +188,11 @@ class ProcessJsonClearing
 				return [
 					...$item,
 					'transaction_id' =>
-						($item['clearing_debit'] === 0 ? $this->transactions['REVERSO DE COMPRA'][0] : $this->transactions['COMPRA'][0])
+						($item['clearing_debit'] === 0 ? $this->transactions['REVERSO DE COMPRA']->id : $this->transactions['COMPRA']->id)
 				];
 			}
 
-			return [...$item, 'transaction_id' => $this->transactions['UNKNOWN-99'][0]];
+			return [...$item, 'transaction_id' => $this->transactions['UNKNOWN-99']->id];
 
 		}, $values);
 

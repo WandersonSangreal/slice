@@ -152,7 +152,8 @@ class ProcessEp
 					'value' => preg_replace('/[^\d.]/', '', trim($matches[1])),
 					'type_value' => $type ?? preg_replace('/[^a-zA-Z]/', '', trim($matches[1])),
 					'currency' => $currency,
-					'transaction_id' => $this->transactions[$classification][0],
+					'transaction_id' => $this->transactions[$classification]->id,
+					'date' => date('Y-m-d')
 				];
 
 			}
@@ -161,7 +162,8 @@ class ProcessEp
 				'value' => null,
 				'type_value' => $type ?? null,
 				'currency' => $currency,
-				'transaction_id' => $this->transactions[$classification][0],
+				'transaction_id' => $this->transactions[$classification]->id,
+				'date' => date('Y-m-d')
 			];
 
 		}, $patterns, array_keys($patterns));
