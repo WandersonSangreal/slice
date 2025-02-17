@@ -30,8 +30,8 @@ class InsertService
 		$sql = "INSERT INTO {$this->table} (" . join(',', $columns) . ") VALUES " .
 			str_repeat("($values),", count($data) - 1) . "($values)";
 
-		# USING COPY, FILE ISSUES
-		# $sql = "COPY $this->table FROM $tmpCSV WITH (FORMAT csv, HEADER true, DELIMITER ',');";
+		# USING COPY, FILE AND DATA ISSUES
+		# $sql = "COPY $this->table (" . join(',', $columns) . ") FROM STDIN WITH (FORMAT csv, DELIMITER ',')";
 
 		$pdo = $this->connection->getPDO();
 
@@ -40,6 +40,9 @@ class InsertService
 		try {
 
 			$pdo->beginTransaction();
+
+			# $pdo->exec($sql);
+			# $pdo->exec(implode("\n", array_map(fn($row) => implode(",", array_values($row)), $data)));
 
 			# PARAMS LIMIT 65535
 			$stmt->execute(array_merge(...array_map('array_values', $data)));
