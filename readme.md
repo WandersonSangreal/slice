@@ -3,16 +3,22 @@
 Este projeto é um processador de arquivos de transações que lê arquivos JSON em massa e arquivos EP747 TXT, processa os
 dados e os armazena em um banco de dados PostgresSQL.
 
+---
+
 ## Arquivos
 
 O arquivo `process.php` executa as migrations `src/Migrations` ou truncate caso as tabelas já existam, e executa a
 chamada dos processadores tanto o clearing, quanto o ep747. Ambos estão na pasta `src/Processors`, também é injetado o
 Serviço de inserção dos dados no banco `src/Services`.
 
+---
+
 ## Consultas
 
 As consultas, estão dentro da pasta `src/Queries` com os valores dos resultados, alguns valores infelizmente não bateram
 mas tentei deixar o mais próximo possível.
+
+---
 
 ## Preparar o Projeto
 
