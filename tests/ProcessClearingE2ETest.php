@@ -9,7 +9,7 @@ use App\Services\InsertService;
 use App\Services\TransactionService;
 use PHPUnit\Framework\TestCase;
 
-class ProccessClearingE2ETest extends TestCase
+class ProcessClearingE2ETest extends TestCase
 {
 
 	private static $connection;

@@ -78,13 +78,16 @@ mas tentei deixar o mais próximo possível.
     ./vendor/bin/phpunit tests --colors
     ```
 
-3. Outra forma de rodar o projeto é através do docker, o processo roda automaticamente e os resultados podem ser
-   conferidos no banco de dados
+3. Outra forma de rodar o projeto é através do docker, o processo ~~roda automaticamente~~ precisa ser acessado para
+   rodar com `docker exec -it php_service bash` e `php process.php` e os resultados podem ser conferidos no banco de
+   dados `docker exec -it db bash`. Foi instalada a ext `Swoole` para rodar de forma assincrona os processos e a
+   quantidade pode ser definida pelo `PROCESS_FILE_LIMIT` no arquivo `.env`, se não for definido o valor padrão é de 1
+   arquivo, para rodar basta executar `php process-clearing-swoole.php`.
+    ```
+    docker-compose build
+    ```
     ```
     docker compose up -d
-    ```
-    ```
-    docker exec -it db bash
     ```
 
 ---
