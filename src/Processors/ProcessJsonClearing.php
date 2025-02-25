@@ -3,71 +3,14 @@
 namespace App\Processors;
 
 use Exception;
-use App\Services\InsertService;
 
-define('L_BRACKETS', '[');
-define('R_BRACKETS', ']');
-define('COMMA', ',');
-
-class ProcessJsonClearing
+class ProcessJsonClearing extends AbstractProcess
 {
 
-	private int $bytes = 4096;
-	private string $processDir;
-	private array $transactions;
-	private InsertService $insertService;
+	protected int $bytes = 4096;
+	protected string $ext = 'json';
 
-	public function __construct(string $processDir, InsertService $insertService, array $transactions, array $config)
-	{
-
-		$this->processDir = $processDir;
-		$this->transactions = $transactions;
-		$this->insertService = $insertService;
-		$this->bytes = array_key_exists('bytes', $config) ? $config['bytes'] : $this->bytes;
-
-	}
-
-	public function processFiles()
-	{
-
-		$results = [];
-		$files = glob("{$this->processDir}/*.json");
-
-		if (empty($files)) {
-
-			echo "no files to process" . PHP_EOL . PHP_EOL;
-
-			return $results;
-
-		}
-
-		foreach ($files as $file) {
-
-			echo "processing file: " . basename($file) . PHP_EOL . PHP_EOL;
-
-			$success = $this->processFile($file);
-
-			if ($success) {
-
-				is_dir("{$this->processDir}/processed/") || mkdir("{$this->processDir}/processed/");
-
-				rename($file, "{$this->processDir}/processed/" . basename($file));
-
-				array_push($results, basename($file));
-
-			} else {
-
-				is_dir("{$this->processDir}/failed/") || mkdir("{$this->processDir}/failed/");
-
-				rename($file, "{$this->processDir}/failed/" . basename($file));
-
-			}
-
-		}
-
-	}
-
-	private function processFile(string $file): bool
+	protected function processFile(string $file): bool
 	{
 
 		if (!file_exists($file)) {
@@ -88,9 +31,9 @@ class ProcessJsonClearing
 
 				$chunk = fread($stream, $this->bytes * 1024);
 
-				$data = explode(PHP_EOL, $buffer . ltrim($chunk, L_BRACKETS));
-				$buffer = rtrim(preg_replace('!\s+!', '', array_pop($data)), R_BRACKETS);
-				$formatted = L_BRACKETS . rtrim(preg_replace('!\s+!', '', implode(PHP_EOL, $data)), COMMA) . R_BRACKETS;
+				$data = explode(PHP_EOL, $buffer . ltrim($chunk, '['));
+				$buffer = rtrim(preg_replace('!\s+!', '', array_pop($data)), ']');
+				$formatted = '[' . rtrim(preg_replace('!\s+!', '', implode(PHP_EOL, $data)), ',') . ']';
 
 				try {
 

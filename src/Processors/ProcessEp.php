@@ -2,73 +2,16 @@
 
 namespace App\Processors;
 
-use App\Services\InsertService;
-
-class ProcessEp
+class ProcessEp extends AbstractProcess
 {
-	private string $processDir;
-	private array $filters = [];
-	private array $transactions;
-	private array $usdPatterns = [];
-	private array $brlPatterns = [];
-	private InsertService $insertService;
 
-	public function __construct(string $processDir, InsertService $insertService, array $transactions, array $config)
-	{
+	protected string $ext = 'txt';
 
-		$this->processDir = $processDir;
-		$this->transactions = $transactions;
-		$this->insertService = $insertService;
+	protected array $filters = [];
+	protected array $usdPatterns = [];
+	protected array $brlPatterns = [];
 
-		$this->filters = array_key_exists('filters', $config) ? $config['filters'] : $this->filters;
-		$this->usdPatterns = array_key_exists('usdPatterns', $config) ? $config['usdPatterns'] : $this->usdPatterns;
-		$this->brlPatterns = array_key_exists('brlPatterns', $config) ? $config['brlPatterns'] : $this->brlPatterns;
-
-	}
-
-	public function processFiles()
-	{
-
-		$results = [];
-		$files = glob("{$this->processDir}/*.txt");
-
-		if (empty($files)) {
-
-			echo "no files to process" . PHP_EOL . PHP_EOL;
-
-			return $results;
-
-		}
-
-		foreach ($files as $file) {
-
-			echo "processing file: " . basename($file) . PHP_EOL;
-
-			$success = $this->processFile($file);
-
-			if ($success) {
-
-				is_dir("{$this->processDir}/processed/") || mkdir("{$this->processDir}/processed/");
-
-				rename($file, "{$this->processDir}/processed/" . basename($file));
-
-				array_push($results, basename($file));
-
-			} else {
-
-				is_dir("{$this->processDir}/failed/") || mkdir("{$this->processDir}/failed/");
-
-				rename($file, "{$this->processDir}/failed/" . basename($file));
-
-			}
-
-		}
-
-		return $results;
-
-	}
-
-	private function processFile(string $file): bool
+	protected function processFile(string $file): bool
 	{
 
 		if (!file_exists($file)) {

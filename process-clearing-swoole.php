@@ -9,21 +9,16 @@ use App\Services\TransactionService;
 
 if (class_exists('Swoole\Process')) {
 
-	define('L_BRACKETS', '[');
-	define('R_BRACKETS', ']');
-	define('COMMA', ',');
-
-	function processFiles($processDir)
+	function processFiles($processDir): void
 	{
 
-		$results = [];
 		$files = glob("{$processDir}/*.json");
 
 		if (empty($files)) {
 
 			echo "no files to process" . PHP_EOL . PHP_EOL;
 
-			return $results;
+			return;
 
 		}
 
@@ -82,9 +77,9 @@ if (class_exists('Swoole\Process')) {
 
 				$chunk = fread($stream, $bytes * 1024);
 
-				$data = explode(PHP_EOL, $buffer . ltrim($chunk, L_BRACKETS));
-				$buffer = rtrim(preg_replace('!\s+!', '', array_pop($data)), R_BRACKETS);
-				$formatted = L_BRACKETS . rtrim(preg_replace('!\s+!', '', implode(PHP_EOL, $data)), COMMA) . R_BRACKETS;
+				$data = explode(PHP_EOL, $buffer . ltrim($chunk, '['));
+				$buffer = rtrim(preg_replace('!\s+!', '', array_pop($data)), ']');
+				$formatted = '[' . rtrim(preg_replace('!\s+!', '', implode(PHP_EOL, $data)), ',') . ']';
 
 				try {
 
