@@ -6,4 +6,5 @@ assets
 /.idea
 /.vscode
 /pg_data
+/_receivables
 test.php

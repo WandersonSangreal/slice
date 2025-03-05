@@ -57,6 +57,7 @@ if (class_exists('Swoole\Process')) {
 
 		}
 
+		$results = [];
 		$error = false;
 		$bytes = intval($_ENV['STREAM_BYTES']);
 

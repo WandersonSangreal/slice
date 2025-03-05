@@ -35,26 +35,10 @@ class ProcessJsonClearing extends AbstractProcess
 				$buffer = rtrim(preg_replace('!\s+!', '', array_pop($data)), ']');
 				$formatted = '[' . rtrim(preg_replace('!\s+!', '', implode(PHP_EOL, $data)), ',') . ']';
 
-				try {
+				if (!$this->decodeAndSave($formatted, $file)) {
 
-					$processed = json_decode($formatted, true);
-
-					if (!$processed) {
-						echo $formatted;
-					}
-
-					$processed = $this->classify($processed);
-
-					echo "streaming [" . sizeof($processed) . "] lines from: " . basename($file) . PHP_EOL;
-
-					$this->insertService->insert($processed);
-
-				} catch (Exception $e) {
-
-					$buffer = '';
 					$error = true;
-
-					echo "error: processing file: " . $e->getMessage() . PHP_EOL;
+					$buffer = '';
 
 					break;
 
@@ -64,21 +48,9 @@ class ProcessJsonClearing extends AbstractProcess
 
 			if ($buffer) {
 
-				try {
-
-					$processed = json_decode($buffer, true);
-
-					$processed = $this->classify($processed);
-
-					echo "streaming " . sizeof($processed) . ' lines from: ' . basename($file) . PHP_EOL;
-
-					$this->insertService->insert($processed);
-
-				} catch (Exception $e) {
+				if (!$this->decodeAndSave($buffer, $file)) {
 
 					$error = true;
-
-					echo "error: processing file: " . $e->getMessage() . PHP_EOL;
 
 				}
 
@@ -101,6 +73,31 @@ class ProcessJsonClearing extends AbstractProcess
 		echo "error: proccessing file: $file" . PHP_EOL . PHP_EOL;
 
 		return false;
+
+	}
+
+	private function decodeAndSave($formatted, $file): bool
+	{
+
+		try {
+
+			$processed = json_decode($formatted, true);
+
+			$processed = $this->classify($processed);
+
+			echo "streaming [" . sizeof($processed) . "] lines from: " . basename($file) . PHP_EOL;
+
+			$this->insertService->insert($processed);
+
+			return true;
+
+		} catch (Exception $e) {
+
+			echo "error: processing file: " . $e->getMessage() . PHP_EOL;
+
+			return false;
+
+		}
 
 	}
 
